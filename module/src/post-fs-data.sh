@@ -44,4 +44,11 @@ if [ -f $MODDIR/lib/libzygisk.so ];then
 fi
 
 [ "$DEBUG" = true ] && export RUST_BACKTRACE=1
-./bin/zygisk-ptrace64 monitor &
+
+if [ "$(cat /proc/cpuinfo | grep architecture)" = "CPU architecture: 7" ]; then
+  ./bin/zygisk-ptrace32 monitor &
+else
+  # zygisk-ptrace64 should not be used on 32-bit devices
+  ./bin/zygisk-ptrace64 monitor &
+fi
+
