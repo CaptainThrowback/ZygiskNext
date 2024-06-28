@@ -62,11 +62,11 @@ VERSION=$(grep_prop version "${TMPDIR}/module.prop")
 ui_print "- Installing ReZygisk $VERSION"
 
 # check android
-if [ "$API" -lt 26 ]; then
-  ui_print "! Unsupported sdk: $API"
-  abort "! Minimal supported sdk is 26 (Android 8.0)"
+if [ "$API" -lt 25 ]; then
+  ui_print "! Unsupported SDK: $API"
+  abort "! Minimal supported SDK is 25 (Android 7.1). If you want to go lower, build from source."
 else
-  ui_print "- Device sdk: $API"
+  ui_print "- Device SDK: $API"
 fi
 
 # check architecture
