@@ -8,6 +8,20 @@ MAX_KSU_VERSION=@MAX_KSU_VERSION@
 MIN_MAGISK_VERSION=@MIN_MAGISK_VERSION@
 MIN_APATCH_VERSION=@MIN_APATCH_VERSION@
 
+extract() {
+  zip=$1
+  file=$2
+  dir=$3
+  junk_paths=$4
+  [ -z "$junk_paths" ] && junk_paths=false
+  opts="-o"
+  [ $junk_paths = true ] && opts="-oj"
+
+  file_path=""
+  unzip $opts "$zip" "$file" -d "$dir" >&2
+  [ -f "$file_path" ]
+}
+
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
   ui_print "- Installing from KernelSU app"
   ui_print "- KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
@@ -76,17 +90,11 @@ else
   ui_print "- Device platform: $ARCH"
 fi
 
-ui_print "- Extracting verify.sh"
-unzip -o "$ZIPFILE" 'verify.sh' -d "$TMPDIR" >&2
-if [ ! -f "$TMPDIR/verify.sh" ]; then
-  ui_print "*********************************************************"
-  ui_print "! Unable to extract verify.sh!"
-  ui_print "! This zip may be corrupted, please try downloading again"
-  abort    "*********************************************************"
-fi
-. "$TMPDIR/verify.sh"
-extract "$ZIPFILE" 'customize.sh'  "$TMPDIR/.vunzip"
-extract "$ZIPFILE" 'verify.sh'     "$TMPDIR/.vunzip"
+file="META-INF/com/google/android/update-binary"
+file_path="$TMPDIR/$file"
+unzip -o "$ZIPFILE" "META-INF/com/google/android/*" -d "$TMPDIR" >&2
+[ -f "$file_path" ]
+extract "$ZIPFILE" 'customize.sh'  "$TMPDIR"
 extract "$ZIPFILE" 'sepolicy.rule' "$TMPDIR"
 
 if [ "$KSU" ]; then
@@ -104,7 +112,6 @@ extract "$ZIPFILE" 'module.prop'     "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh'      "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh'    "$MODPATH"
-extract "$ZIPFILE" 'mazoku'          "$MODPATH"
 mv "$TMPDIR/sepolicy.rule" "$MODPATH"
 
 mkdir "$MODPATH/bin"
@@ -177,9 +184,6 @@ if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
   extract "$ZIPFILE" 'lib/x86_64/libzygisk.so' "$MODPATH/lib64" true
   extract "$ZIPFILE" 'lib/x86_64/libzygisk_ptrace.so' "$MODPATH/bin" true
   mv "$MODPATH/bin/libzygisk_ptrace.so" "$MODPATH/bin/zygisk-ptrace64"
-
-  extract "$ZIPFILE" 'machikado.x86' "$MODPATH" true
-  mv "$MODPATH/machikado.x86" "$MODPATH/machikado"
 else
   ui_print "- Extracting arm libraries"
   extract "$ZIPFILE" 'bin/armeabi-v7a/zygiskd' "$MODPATH/bin" true
@@ -194,9 +198,6 @@ else
   extract "$ZIPFILE" 'lib/arm64-v8a/libzygisk.so' "$MODPATH/lib64" true
   extract "$ZIPFILE" 'lib/arm64-v8a/libzygisk_ptrace.so' "$MODPATH/bin" true
   mv "$MODPATH/bin/libzygisk_ptrace.so" "$MODPATH/bin/zygisk-ptrace64"
-
-  extract "$ZIPFILE" 'machikado.arm' "$MODPATH" true
-  mv "$MODPATH/machikado.arm" "$MODPATH/machikado"
 fi
 
 ui_print "- Setting permissions"

@@ -3,7 +3,7 @@ name: Build ReZygisk
 on:
   workflow_dispatch:
   push:
-    branches: [ ReZygisk-add_webui ]
+    branches: [ ReZygisk*webui* ]
 
   pull_request:
   merge_group:
