@@ -72,7 +72,7 @@ pub fn main() -> Result<()> {
         modules.len(),
         module_names.join(",")
       );
-  
+
       msg.extend_from_slice(&(info.len() as u32 + 1).to_le_bytes());
       msg.extend_from_slice(info.as_bytes());
       msg.extend_from_slice(&[0u8]);
