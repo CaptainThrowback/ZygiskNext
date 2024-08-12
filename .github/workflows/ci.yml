@@ -35,6 +35,9 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Setup rust-cache
         uses: Swatinem/rust-cache@v2
         with:
