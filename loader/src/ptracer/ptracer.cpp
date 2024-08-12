@@ -8,8 +8,6 @@
 #include <string>
 #include <sys/mman.h>
 #include <sys/wait.h>
-#include <cstdlib>
-#include <cstdio>
 #include <dlfcn.h>
 #include <signal.h>
 #include <sys/system_properties.h>
@@ -190,6 +188,8 @@ bool inject_on_main(int pid, const char *lib_path) {
       read_proc(pid, (uintptr_t) dlerror_str_addr, err, dlerror_len);
 
       LOGE("dlerror info %s", err);
+
+      free(err);
 
       return false;
     }

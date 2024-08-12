@@ -6,6 +6,7 @@ MIN_KSU_VERSION=@MIN_KSU_VERSION@
 MIN_KSUD_VERSION=@MIN_KSUD_VERSION@
 MAX_KSU_VERSION=@MAX_KSU_VERSION@
 MIN_MAGISK_VERSION=@MIN_MAGISK_VERSION@
+MIN_APATCH_VERSION=@MIN_APATCH_VERSION@
 
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
   ui_print "- Installing from KernelSU app"
@@ -34,6 +35,14 @@ if [ "$BOOTMODE" ] && [ "$KSU" ]; then
     ui_print "! Please uninstall Magisk before installing ReZygisk"
     abort    "*********************************************************"
   fi
+  elif [ "$BOOTMODE" ] && [ "$APATCH" ]; then
+    ui_print "- Installing from APatch app"
+    if ! [ "$APATCH_VER_CODE" ] || [ "$APATCH_VER_CODE" -lt "$MIN_APATCH_VERSION" ]; then
+      ui_print "*********************************************************"
+      ui_print "! APatch version is too old!"
+      ui_print "! Please update APatch to latest version"
+      abort    "*********************************************************"
+    fi
 elif [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
   ui_print "- Installing from Magisk app"
   if [ "$MAGISK_VER_CODE" -lt "$MIN_MAGISK_VERSION" ]; then
@@ -94,6 +103,7 @@ ui_print "- Extracting module files"
 extract "$ZIPFILE" 'module.prop'     "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh'      "$MODPATH"
+extract "$ZIPFILE" 'uninstall.sh'    "$MODPATH"
 extract "$ZIPFILE" 'mazoku'          "$MODPATH"
 mv "$TMPDIR/sepolicy.rule" "$MODPATH"
 

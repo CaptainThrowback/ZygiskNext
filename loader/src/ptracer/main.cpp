@@ -4,49 +4,8 @@
 #include "utils.hpp"
 #include "daemon.h"
 
-#define CUSTOM_TMP_PATH 0
-#define SBIN_AS_TMP_PATH 1
-#define DEBUG_RAMDISK_AS_TMP_PATH 2
-
 int main(int argc, char **argv) {
-  int tmp_path_type = CUSTOM_TMP_PATH;
-
-  if (getenv("TMP_PATH") == NULL) {
-    tmp_path_type = SBIN_AS_TMP_PATH;
-
-    FILE *fp = fopen("/sbin", "r");
-    if (fp == NULL) {
-      tmp_path_type = DEBUG_RAMDISK_AS_TMP_PATH;
-
-      fp = fopen("/debug_ramdisk", "r");
-
-      if (fp == NULL) {
-        printf("Cannot find TMP_PATH. You should make an issue about that.\n");
-
-        return 1;
-      } else fclose(fp);
-    } else fclose(fp);
-  } else {
-    tmp_path_type = CUSTOM_TMP_PATH;
-  }
-
-  switch (tmp_path_type) {
-    case CUSTOM_TMP_PATH: {
-      zygiskd::Init(getenv("TMP_PATH"));
-
-      break;
-    }
-    case SBIN_AS_TMP_PATH: {
-      zygiskd::Init("/sbin");
-
-      break;
-    }
-    case DEBUG_RAMDISK_AS_TMP_PATH: {
-      zygiskd::Init("/debug_ramdisk");
-
-      break;
-    }
-  }
+  zygiskd::Init("/data/adb/rezygisk");
 
   printf("The ReZygisk Tracer %s\n\n", ZKSU_VERSION);
 
@@ -106,6 +65,11 @@ int main(int argc, char **argv) {
 
         break;
       }
+      case ZYGOTE_ROOT_IMPL_APATCH: {
+        printf("Root implementation: APatch\n");
+        
+        break;
+      }
       case ZYGOTE_ROOT_IMPL_KERNELSU: {
         printf("Root implementation: KernelSU\n");
 
@@ -118,7 +82,52 @@ int main(int argc, char **argv) {
       }
     }
 
-    printf("Is the daemon running: %s\n", info.running ? "yes" : "no");
+    #ifdef __LP64__
+      printf("Daemon64 running: %d\n", status64.daemon_running);
+      printf("Zygote64 injected: %s\n", status64.zygote_injected ? "yes" : "no");
+    #else
+      printf("Daemon32 running: %s\n", status32.daemon_running ? "yes" : "no");
+      printf("Zygote32 injected: %s\n", status32.zygote_injected ? "yes" : "no");
+    #endif
+
+    switch (tracing_state) {
+      case TRACING: {
+        printf("Tracing state: TRACING\n");
+
+        break;
+      }
+      case STOPPING: {
+        printf("Tracing state: STOPPING\n");
+        printf("Stop reason: %s\n", monitor_stop_reason);
+
+        break;
+      }
+      case STOPPED: {
+        printf("Tracing state: STOPPED\n");
+        printf("Stop reason: %s\n", monitor_stop_reason);
+
+        break;
+      }
+      case EXITING: {
+        printf("Tracing state: EXITING\n");
+
+        break;
+      }
+    }
+
+    if (info.modules->modules_count != 0) {
+      printf("Modules: %zu\n", info.modules->modules_count);
+
+      for (size_t i = 0; i < info.modules->modules_count; i++) {
+        printf(" - %s\n", info.modules->modules[i]);
+
+        free(info.modules->modules[i]);
+      }
+
+      free(info.modules->modules);
+    } else {
+      printf("Modules: N/A\n");
+    }
 
     return 0;
   } else {

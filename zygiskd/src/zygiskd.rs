@@ -51,7 +51,7 @@ pub fn main() -> Result<()> {
     {
         let mut msg = Vec::<u8>::new();
         let info = match root_impl::get_impl() {
-            root_impl::RootImpl::KernelSU | root_impl::RootImpl::Magisk => {
+            root_impl::RootImpl::KernelSU | root_impl::RootImpl::Magisk | root_impl::RootImpl::APatch => {
                 msg.extend_from_slice(&constants::DAEMON_SET_INFO.to_le_bytes());
                 let module_names: Vec<_> = modules.iter().map(|m| m.name.as_str()).collect();
                 format!(
@@ -161,7 +161,7 @@ fn load_modules(arch: &str) -> Result<Vec<Module>> {
 
 fn create_library_fd(so_path: &PathBuf) -> Result<OwnedFd> {
     let opts = memfd::MemfdOptions::default().allow_sealing(true);
-    let memfd = opts.create("jit-cache")?;
+    let memfd = opts.create("jit-cache-zygisk")?;
     let file = fs::File::open(so_path)?;
     let mut reader = std::io::BufReader::new(file);
     let mut writer = memfd.as_file();
@@ -254,6 +254,7 @@ fn handle_daemon_action(
             match root_impl::get_impl() {
                 root_impl::RootImpl::KernelSU => flags |= ProcessFlags::PROCESS_ROOT_IS_KSU,
                 root_impl::RootImpl::Magisk => flags |= ProcessFlags::PROCESS_ROOT_IS_MAGISK,
+                root_impl::RootImpl::APatch => flags |= ProcessFlags::PROCESS_ROOT_IS_APATCH,
                 _ => panic!("wrong root impl: {:?}", root_impl::get_impl()),
             }
             trace!(
@@ -274,6 +275,7 @@ fn handle_daemon_action(
           match root_impl::get_impl() {
               root_impl::RootImpl::KernelSU => flags |= ProcessFlags::PROCESS_ROOT_IS_KSU,
               root_impl::RootImpl::Magisk => flags |= ProcessFlags::PROCESS_ROOT_IS_MAGISK,
+              root_impl::RootImpl::APatch => flags |= ProcessFlags::PROCESS_ROOT_IS_APATCH,
               _ => panic!("wrong root impl: {:?}", root_impl::get_impl()),
           }
 
@@ -281,6 +283,12 @@ fn handle_daemon_action(
 
           let pid = unsafe { libc::getpid() };
           stream.write_u32(pid as u32)?;
+
+          stream.write_usize(context.modules.len())?;
+
+          for module in context.modules.iter() {
+              stream.write_string(&module.name)?;
+          }
         }
         DaemonSocketAction::ReadModules => {
             stream.write_usize(context.modules.len())?;
